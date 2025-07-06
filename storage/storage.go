@@ -88,3 +88,83 @@ func ReadTasksFromFile(filename string) ([]Task, error) {
 
 	return tasks, nil
 }
+
+// Write tasks to json file (overwrites existing content)
+func WriteTasksToFile(tasks []Task, filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(tasks)
+}
+
+// Remove task by ID
+func RemoveTaskFromFile(taskID string, filename string) (Task, error) {
+	tasks, err := ReadTasksFromFile(filename)
+	if err != nil {
+		return Task{}, err
+	}
+
+	var removedTask Task
+	var updatedTasks []Task
+	found := false
+
+	for _, task := range tasks {
+		if task.ID == taskID {
+			removedTask = task
+			found = true
+		} else {
+			updatedTasks = append(updatedTasks, task)
+		}
+	}
+
+	if !found {
+		return Task{}, os.ErrNotExist
+	}
+
+	err = WriteTasksToFile(updatedTasks, filename)
+	return removedTask, err
+}
+
+// Update task status by ID
+func UpdateTaskStatus(taskID string, status bool, filename string) (Task, error) {
+	tasks, err := ReadTasksFromFile(filename)
+	if err != nil {
+		return Task{}, err
+	}
+
+	var updatedTask Task
+	found := false
+
+	for i, task := range tasks {
+		if task.ID == taskID {
+			tasks[i].Status = status
+			updatedTask = tasks[i]
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return Task{}, os.ErrNotExist
+	}
+
+	err = WriteTasksToFile(tasks, filename)
+	return updatedTask, err
+}
+
+// Clear all tasks
+func ClearAllTasks(filename string) ([]Task, error) {
+	tasks, err := ReadTasksFromFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	emptyTasks := []Task{}
+	err = WriteTasksToFile(emptyTasks, filename)
+	return tasks, err
+}

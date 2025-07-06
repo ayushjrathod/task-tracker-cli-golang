@@ -42,7 +42,6 @@ func main() {
 
 		// Check for exit command
 		if commandType == "exit" {
-			fmt.Println("Goodbye! Thanks for using Task Manager CLI")
 			break
 		}
 
@@ -69,23 +68,40 @@ func main() {
 
 		switch commandType {
 		case "add":
+			if taskName == "" {
+				fmt.Println("Error: Please provide a task name. Usage: add <task_name>")
+				continue
+			}
 			task.NewTask(taskName)
-			fmt.Println("Task added:", taskName)
 		case "list":
-			fmt.Println("Listing all tasks...")
 			task.ListTasks()
 		case "remove":
-			fmt.Println("Removing a task...", taskId)
+			if taskId == 0 {
+				fmt.Println("Error: Please provide a task ID. Usage: remove <task_id>")
+				continue
+			}
+			err := task.RemoveTask(taskId)
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
 		case "done":
-			fmt.Println("Marking task as done...")
-		case "undo":
-			fmt.Println("Undoing the last action...")
+			if taskId == 0 {
+				fmt.Println("Error: Please provide a task ID. Usage: done <task_id>")
+				continue
+			}
+			err := task.MarkTaskDone(taskId)
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
 		case "clear":
 			fallthrough
 		case "reset":
-			fmt.Println("Clearing all tasks...")
+			err := task.ClearAllTasks()
+			if err != nil {
+				fmt.Println("Error:", err)
+			}
 		default:
-			fmt.Println("Unknown command. Available commands: add, list, remove, done, undo, clear, reset or exit.")
+			fmt.Println("Unknown command. Available commands: add, list, remove, done, clear, reset or exit.")
 		}
 	}
 }
