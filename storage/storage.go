@@ -3,7 +3,6 @@ package storage
 import (
 	"encoding/json"
 	"os"
-	"strconv"
 )
 
 type Task struct {
@@ -29,45 +28,30 @@ func CreateFile(filename string) string {
 
 // add task to json file
 func AddTaskToFile(id, taskName string, status bool, filename string) {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	//handle if the file is empty adding both []
-	info, err := file.Stat()
-	if err != nil {
-		panic(err)
-	}
-
-	if info.Size() == 0 {
-		// File is empty, start with opening bracket
-		file.WriteString("[\n")
-		//write the task as a json object (first entry, no comma)
-		file.WriteString(`  {"ID":"` + id + `","TaskName":"` + taskName + `","Status":` + strconv.FormatBool(status) + `}` + "\n")
-		file.WriteString("]")
-	} else {
-		// File has content, need to insert before the closing bracket
-		// Read current content
-		file.Seek(0, 0)
-		content := make([]byte, info.Size())
-		file.Read(content)
-
-		// Remove the closing bracket and add comma + new entry + closing bracket
-		contentStr := string(content)
-		if len(contentStr) > 0 && contentStr[len(contentStr)-1] == ']' {
-			// Remove the last character (closing bracket)
-			contentStr = contentStr[:len(contentStr)-1]
-
-			// Truncate file and write updated content
-			file.Truncate(0)
-			file.Seek(0, 0)
-			file.WriteString(contentStr)
-			file.WriteString(`,` + "\n")
-			file.WriteString(`  {"ID":"` + id + `","TaskName":"` + taskName + `","Status":` + strconv.FormatBool(status) + `}` + "\n")
-			file.WriteString("]")
+	// Read existing tasks
+	var tasks []Task
+	if FileExists(filename) {
+		existingTasks, err := ReadTasksFromFile(filename)
+		if err != nil {
+			// If file exists but can't be read, start with empty slice
+			tasks = []Task{}
+		} else {
+			tasks = existingTasks
 		}
+	}
+
+	// Add new task
+	newTask := Task{
+		ID:       id,
+		TaskName: taskName,
+		Status:   status,
+	}
+	tasks = append(tasks, newTask)
+
+	// Write all tasks back to file
+	err := WriteTasksToFile(tasks, filename)
+	if err != nil {
+		panic(err)
 	}
 }
 
